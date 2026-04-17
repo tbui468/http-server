@@ -1,0 +1,54 @@
+Spec for http 1.1, http 2, and http 3
+    https://www.rfc-editor.org/rfc/rfc9110.html
+
+Read these two:
+    https://www.jmarshall.com/easy/cgi/
+        this is related to forms, not request parameters (???)
+    https://www.jmarshall.com/easy/http/
+
+
+move all shared code to a new github project called gkab.h
+    arena (find one that includes realloc, even if it's slow)
+    macros for generating lists
+
+
+include gkab.h into project, and use this for arena and byte_array
+
+Use gkab as prefix to this project
+    gkab_listen_and_serve
+    gkab_string
+
+Add templates for dynamic html generation
+    What's the API we should use?
+        rather than http_write_file, it should be http_write_template
+        http_write_template(struct http_message *response, struct http_message *request, struct http_template_data *data) {
+        }
+
+        struct http_template_data {
+            struct k
+        }; 
+        
+    put in some test data for blog posts
+    will need to parse parameters in url, ie http://localhost:8888/post?pid=2 
+        and pass them to handlers (can put them in struct message *request)
+
+General
+    should probably make _all_ functions prepended with prefix http_ (including string, arena, byte_array, net)
+        these structs are used internally with http module, gwl
+    
+    don't overuse mystring for everything - many things (such as port numbers) can remain const char*
+        just use this when we need to store data in a struct somewhere
+    
+    test.sh no longer works since we are using routes now
+
+    When browser connects to server for first time, 3 distinct connections are made (what's going on here?)
+
+Router
+    currently hard-coded to 16 routes max (excluding default route)
+        should make this heap allocated so that it can get larger (will need to implement arena properly for this)
+        just use arena from grci or other projects
+
+Add postgres driver
+    use libpq client library to connect
+
+Add sessions
