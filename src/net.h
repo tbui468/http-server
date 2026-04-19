@@ -12,9 +12,8 @@
 #include <sys/wait.h>
 #include <stdbool.h>
 
-#include "mystring.h"
+#include "gkab_string.h"
 #include "byte_array.h"
-#include "mystring.h"
 
 #define BACKLOG 10	 // how many pending connections queue will hold
 
@@ -34,7 +33,7 @@ void *get_in_addr(struct sockaddr *sa)
 	return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
-bool net_tcp_connection(struct string *host, struct string *port, int *sockfd) {
+bool net_tcp_connection(struct gkab_string *host, struct gkab_string *port, int *sockfd) {
 	struct addrinfo hints, *servinfo, *p;
 	char s[INET6_ADDRSTRLEN];
 
@@ -125,25 +124,25 @@ void net_recv(int sockfd, struct byte_array *arr, size_t count) {
     }
 }
 
-bool net_get_url_scheme(struct string *url, struct string *result, struct arena *arena) {
-    int idx = string_find_cstring(url, "http://", 0);
+bool net_get_url_scheme(struct gkab_string *url, struct gkab_string *result, struct gkab_arena *arena) {
+    int idx = gkab_string_find_cstring(url, "http://", 0);
     if (idx != -1) {
-        *result = string_init(url->ptr, 4, arena);
+        *result = gkab_string_slice(url, 0, 4, arena);
         return true;
     }
     return false;
 }
 
 
-bool net_get_url_host(struct string *url, struct string *result, struct arena *arena) {
-    int start_idx = string_find_cstring(url, "://", 0);
+bool net_get_url_host(struct gkab_string *url, struct gkab_string *result, struct gkab_arena *arena) {
+    int start_idx = gkab_string_find_cstring(url, "://", 0);
     if (start_idx == -1) {
         return false;
     }
     start_idx += 3;
 
-    int port_idx = string_find_cstring(url, ":", start_idx);
-    int path_idx = string_find_cstring(url, "/", start_idx);
+    int port_idx = gkab_string_find_cstring(url, ":", start_idx);
+    int path_idx = gkab_string_find_cstring(url, "/", start_idx);
     int end_idx;
     if (port_idx == -1 && path_idx == -1) {
         end_idx = url->len;
@@ -157,14 +156,14 @@ bool net_get_url_host(struct string *url, struct string *result, struct arena *a
         assert(false);
     }
 
-    *result = string_init(url->ptr + start_idx, end_idx - start_idx, arena);
+    *result = gkab_string_slice_charstar(url->ptr, start_idx, end_idx, arena);
     
     return true;
 }
 
-bool net_get_url_port(struct string *url, struct string *result, struct arena *arena) {
-    int start_idx = string_find_cstring(url, ":", 0);
-    int port_idx = string_find_cstring(url, ":", start_idx + 1);
+bool net_get_url_port(struct gkab_string *url, struct gkab_string *result, struct gkab_arena *arena) {
+    int start_idx = gkab_string_find_cstring(url, ":", 0);
+    int port_idx = gkab_string_find_cstring(url, ":", start_idx + 1);
 
     if (port_idx == -1) {
         return false;
@@ -185,21 +184,21 @@ bool net_get_url_port(struct string *url, struct string *result, struct arena *a
         return false;
     }
 
-    *result = string_init(url->ptr + beg, end - beg, arena);
+    *result = gkab_string_slice_charstar(url->ptr, beg, end, arena);
 
     return true;
 }
 
 
-bool net_get_url_path(struct string *url, struct string *result, struct arena *arena) {
-    int start_idx = string_find_cstring(url, "://", 0);
-    int filepath_idx = string_find_cstring(url, "/", start_idx + 3);
+bool net_get_url_path(struct gkab_string *url, struct gkab_string *result, struct gkab_arena *arena) {
+    int start_idx = gkab_string_find_cstring(url, "://", 0);
+    int filepath_idx = gkab_string_find_cstring(url, "/", start_idx + 3);
 
     if (filepath_idx == -1) {
         return false;
     }
 
-    *result = string_init(url->ptr + filepath_idx, url->len - filepath_idx, arena);
+    *result = gkab_string_slice_charstar(url->ptr, filepath_idx, url->len, arena);
     
     return true;
 }

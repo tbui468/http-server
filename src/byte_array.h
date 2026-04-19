@@ -4,7 +4,7 @@
 #include <assert.h>
 #include <string.h>
 #include <stdint.h>
-#include "arena.h"
+#include "gkab_arena.h"
 
 typedef uint8_t u8;
 
@@ -14,9 +14,9 @@ struct byte_array {
     off_t len;
 };
 
-void byte_array_init(struct byte_array *arr, size_t len, struct arena *arena) {
+void byte_array_init(struct byte_array *arr, size_t len, struct gkab_arena *arena) {
     arr->capacity = len;
-    arr->ptr = arena_malloc(arena, len);
+    arr->ptr = gkab_arena_malloc(arena, len);
     arr->len = 0;
 }
 

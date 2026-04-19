@@ -7,7 +7,7 @@
 
 #include "http.h"
 
-int default_handler(struct http_message *response, struct http_message *request, struct arena *arena) {
+int default_handler(struct http_message *response, struct http_message *request, struct gkab_arena *arena) {
     if (http_write_file(response, request->start_line[RL_PATH_IDX].ptr + 1, arena)) {
         http_set_response_status(response, SC_200, arena);
     } else {
@@ -17,7 +17,7 @@ int default_handler(struct http_message *response, struct http_message *request,
     return 0;
 }
 
-int home(struct http_message *response, struct http_message *request, struct arena *arena) {
+int home(struct http_message *response, struct http_message *request, struct gkab_arena *arena) {
     if (http_write_file(response, "home.html", arena)) {
         http_set_response_status(response, SC_200, arena);
     } else {
@@ -27,7 +27,7 @@ int home(struct http_message *response, struct http_message *request, struct are
     return 0;
 }
 
-int about(struct http_message *response, struct http_message *request, struct arena *arena) {
+int about(struct http_message *response, struct http_message *request, struct gkab_arena *arena) {
     if (http_write_file(response, "about.html", arena)) {
         http_set_response_status(response, SC_200, arena);
     } else {
@@ -37,7 +37,7 @@ int about(struct http_message *response, struct http_message *request, struct ar
     return 0;
 }
 
-int post(struct http_message *response, struct http_message *request, struct arena *arena) {
+int post(struct http_message *response, struct http_message *request, struct gkab_arena *arena) {
     if (http_write_file(response, "post.html", arena)) {
         http_set_response_status(response, SC_200, arena);
     } else {
@@ -47,7 +47,7 @@ int post(struct http_message *response, struct http_message *request, struct are
     return 0;
 }
 
-int not_found(struct http_message *response, struct http_message *request, struct arena *arena) {
+int not_found(struct http_message *response, struct http_message *request, struct gkab_arena *arena) {
     if (http_write_file(response, "not_found.html", arena)) {
         http_set_response_status(response, SC_404, arena);
     } else {
@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
     http_set_route(&http, "/post", post);
     http_set_default_route(&http, default_handler);
 
-    struct string port = string_from_cstring(argv[1], &http.arena);
+    struct gkab_string port = gkab_string_dup_cstring(argv[1], &http.arena);
     http_listen_and_serve(&http, &port);
 
 	return 0;

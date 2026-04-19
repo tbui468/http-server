@@ -5,13 +5,13 @@
 #include <stdbool.h>
 #include <assert.h>
 
-#include "arena.h"
+#include "gkab_arena.h"
 #include "net.h"
 #include "byte_array.h"
-#include "mystring.h"
+#include "gkab_string.h"
 #include "http.h"
 
-struct arena g_arena;
+struct gkab_arena g_arena;
 
 int main(int argc, char *argv[])
 {
@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
 	    exit(1);
 	}
 
-    arena_init(&g_arena);
+    gkab_arena_init(&g_arena);
     struct http http;
     http_init(&http);
 
@@ -28,16 +28,16 @@ int main(int argc, char *argv[])
 
     
 
-    struct string url = string_from_cstring(argv[1], &g_arena);
-    struct string host;
+    struct gkab_string url = gkab_string_dup_cstring(argv[1], &g_arena);
+    struct gkab_string host;
     net_get_url_host(&url, &host, &g_arena);
 
-    struct string port;
+    struct gkab_string port;
     if (!net_get_url_port(&url, &port, &g_arena)) {
-        port = string_from_cstring("80", &g_arena);
+        port = gkab_string_dup_cstring("80", &g_arena);
     }
 
-    struct string scheme;
+    struct gkab_string scheme;
     if (!net_get_url_scheme(&url, &scheme, &g_arena)) {
         FILE *f = fopen(out_filepath, "w");
         fprintf(f, "INVALIDPROTOCOL");
@@ -57,20 +57,22 @@ int main(int argc, char *argv[])
 
     printf("sending http request...\n");
 
-    struct string method = string_from_cstring("GET", &g_arena);
-    struct string path;
+    struct gkab_string method = gkab_string_dup_cstring("GET", &g_arena);
+    struct gkab_string path;
     if (!net_get_url_path(&url, &path, &g_arena)) {
-        path = string_from_cstring("/", &g_arena);
+        path = gkab_string_dup_cstring("/", &g_arena);
     }
     
-    struct string protocol_version = string_from_cstring("HTTP/1.1", &g_arena);
+    struct gkab_string protocol_version = gkab_string_dup_cstring("HTTP/1.1", &g_arena);
 
 
-    struct string user_agent = string_from_cstring("cs435-client", &g_arena);
-    struct string accept = string_from_cstring("*/*", &g_arena);
+    struct gkab_string user_agent = gkab_string_dup_cstring("cs435-client", &g_arena);
+    struct gkab_string accept = gkab_string_dup_cstring("*/*", &g_arena);
     
-    host = string_concat(&host, ":", &port, &g_arena);
-    struct string connection = string_from_cstring("Keep-Alive", &g_arena);
+    //host = string_concat(&host, ":", &port, &g_arena);
+    host = gkab_string_concat_cstring(&host, ":", &g_arena);
+    host = gkab_string_concat(&host, &port, &g_arena);
+    struct gkab_string connection = gkab_string_dup_cstring("Keep-Alive", &g_arena);
 
     struct http_message request;
     http_init_request(&request);
@@ -99,7 +101,7 @@ int main(int argc, char *argv[])
 
     close(sockfd);
 
-    arena_free(&g_arena);
+    gkab_arena_free(&g_arena);
 
     return 0;
 }

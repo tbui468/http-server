@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 #include "byte_array.h"
-#include "mystring.h"
+#include "gkab_string.h"
 #include "net.h"
 
 #define MAX_HTTP_HEADER_SIZE 8192
@@ -29,14 +29,20 @@ bool g_initialized = false;
 struct http_message;
 
 struct http_route {
-    struct string name;
-    int (*handler)(struct http_message *response, struct http_message *request, struct arena*);
+    struct gkab_string name;
+    int (*handler)(struct http_message *response, struct http_message *request, struct gkab_arena*);
 };
 
 #define MAX_ROUTES 16
 
+struct gkab_string string_from_int(int i, struct gkab_arena *arena) {
+    char buf[16];
+    sprintf(buf, "%d", i);
+    return gkab_string_dup_cstring(buf, arena);
+}
+
 struct http {
-    struct arena arena;
+    struct gkab_arena arena;
     struct http_route routes[MAX_ROUTES];
     struct http_route default_route;
     int route_count;
@@ -55,7 +61,7 @@ enum http_header_field {
 };
 
 //Ensure this matches enum http_header_field above
-struct string http_header_field_names[HF_COUNT] = {
+struct gkab_string http_header_field_names[HF_COUNT] = {
     { .ptr="User-Agent", .len=10 },
     { .ptr="Accept", .len=6 },
     { .ptr="Host", .len=4 },
@@ -82,7 +88,7 @@ const char* http_status_code_to_reason_phrase(enum http_status_code code) {
 }
 
 
-size_t http_start_line_get_size(struct string start_line[START_LINE_FIELD_COUNT]) {
+size_t http_start_line_get_size(struct gkab_string start_line[START_LINE_FIELD_COUNT]) {
     return start_line[0].len + 
            SPACE_SIZE + 
            start_line[1].len + 
@@ -91,7 +97,7 @@ size_t http_start_line_get_size(struct string start_line[START_LINE_FIELD_COUNT]
            CRLF_SIZE;
 }
 
-size_t http_header_fields_get_size(struct string header_fields[HF_COUNT]) {
+size_t http_header_fields_get_size(struct gkab_string header_fields[HF_COUNT]) {
     size_t size = 0;
     for (int i = 0; i < HF_COUNT; i++) {
         if (header_fields[i].len != 0) {
@@ -101,7 +107,7 @@ size_t http_header_fields_get_size(struct string header_fields[HF_COUNT]) {
     return size;
 }
 
-void write_header_field(struct byte_array *arr, struct string *key, struct string *value) {
+void write_header_field(struct byte_array *arr, struct gkab_string *key, struct gkab_string *value) {
     byte_array_append_cstring(arr, key->ptr);
     byte_array_append_cstring(arr, ": ");
     byte_array_append_cstring(arr, value->ptr);
@@ -115,31 +121,31 @@ enum http_message_type {
 
 struct http_message {
     enum http_message_type type;
-    struct string start_line[3];
-    struct string header_fields[HF_COUNT];
+    struct gkab_string start_line[3];
+    struct gkab_string header_fields[HF_COUNT];
     struct byte_array content;
 };
 
 
-void http_set_response_status(struct http_message *response, enum http_status_code code, struct arena *arena) {
+void http_set_response_status(struct http_message *response, enum http_status_code code, struct gkab_arena *arena) {
     assert(response->type == MT_RESPONSE);
     response->start_line[SL_STATUS_CODE_IDX] = string_from_int((int) code, arena);
-    response->start_line[SL_REASON_PHRASE_IDX] = string_from_cstring(http_status_code_to_reason_phrase(code), arena);
+    response->start_line[SL_REASON_PHRASE_IDX] = gkab_string_dup_cstring(http_status_code_to_reason_phrase(code), arena);
 }
 
 
-void http_set_header_field(struct http_message *message, enum http_header_field key, struct string *value) {
+void http_set_header_field(struct http_message *message, enum http_header_field key, struct gkab_string *value) {
     assert(key < HF_COUNT);
     message->header_fields[key] = *value; 
 }
 
 void http_init_request(struct http_message *message) {
     message->type = MT_REQUEST;
-    message->start_line[0] = string_empty();
-    message->start_line[1] = string_empty();
-    message->start_line[2] = string_empty();
+    message->start_line[0] = gkab_string_empty();
+    message->start_line[1] = gkab_string_empty();
+    message->start_line[2] = gkab_string_empty();
     for (int i = 0; i < HF_COUNT; i++) {
-        message->header_fields[i] = string_empty();
+        message->header_fields[i] = gkab_string_empty();
     }
     message->content.ptr = NULL;
     message->content.len = 0;
@@ -148,18 +154,18 @@ void http_init_request(struct http_message *message) {
 
 void http_init_response(struct http_message *message) {
     message->type = MT_RESPONSE;
-    message->start_line[0] = string_empty();
-    message->start_line[1] = string_empty();
-    message->start_line[2] = string_empty();
+    message->start_line[0] = gkab_string_empty();
+    message->start_line[1] = gkab_string_empty();
+    message->start_line[2] = gkab_string_empty();
     for (int i = 0; i < HF_COUNT; i++) {
-        message->header_fields[i] = string_empty();
+        message->header_fields[i] = gkab_string_empty();
     }
     message->content.ptr = NULL;
     message->content.len = 0;
     message->content.capacity = 0;
 }
 
-void http_set_start_line(struct http_message *message, struct string *first, struct string *second, struct string *third) {
+void http_set_start_line(struct http_message *message, struct gkab_string *first, struct gkab_string *second, struct gkab_string *third) {
     message->start_line[0] = *first;
     message->start_line[1] = *second; 
     message->start_line[2] = *third;
@@ -170,27 +176,27 @@ enum http_status_code http_response_status_code(struct http_message *message) {
     return (enum http_status_code) atoi(message->start_line[SL_STATUS_CODE_IDX].ptr);
 }
 
-void http_deserialize_message_header(struct http_message *message, struct byte_array *arr, struct arena *arena) {
+void http_deserialize_message_header(struct http_message *message, struct byte_array *arr, struct gkab_arena *arena) {
     int first_space = byte_array_find(arr, &g_space_bytes, 0);
-    message->start_line[0] = string_init((const char*) arr->ptr, first_space - 0, arena);
+    message->start_line[0] = gkab_string_slice_charstar((char *) arr->ptr, 0, first_space, arena);
 
     first_space++;
     int second_space = byte_array_find(arr, &g_space_bytes, first_space);
-    message->start_line[1] = string_init((const char*) arr->ptr + first_space, second_space - first_space, arena);
+    message->start_line[1] = gkab_string_slice_charstar((char *) arr->ptr, first_space, second_space, arena);
 
     second_space++;
     int crlf = byte_array_find(arr, &g_single_crlf_bytes, second_space);
-    message->start_line[2] = string_init((const char*) arr->ptr + second_space, crlf - second_space, arena);
+    message->start_line[2] = gkab_string_slice_charstar((char *) arr->ptr, second_space, crlf, arena);
 
     int off = crlf + 2; //skip \r\n
 
     while (true) {
         for (int i = 0; i < HF_COUNT; i++) {
-            struct string *name = &http_header_field_names[i]; 
+            struct gkab_string *name = &http_header_field_names[i]; 
             if (off + name->len <= arr->len && memcmp(arr->ptr + off, name->ptr, name->len) == 0) {
                 off += name->len + 2; //skip colon and space too
                 int crlf = byte_array_find(arr, &g_single_crlf_bytes, off);
-                message->header_fields[i] = string_init((const char*) arr->ptr + off, crlf - off, arena);
+                message->header_fields[i] = gkab_string_slice_charstar((char *) arr->ptr, off, crlf, arena);
                 break;
             } 
         }
@@ -204,7 +210,7 @@ void http_deserialize_message_header(struct http_message *message, struct byte_a
     }
 }
 
-size_t http_serialize_start_line(struct byte_array *arr, struct string start_line[START_LINE_FIELD_COUNT]) {
+size_t http_serialize_start_line(struct byte_array *arr, struct gkab_string start_line[START_LINE_FIELD_COUNT]) {
     off_t start = arr->len;
     byte_array_append_cstring(arr, start_line[RL_METHOD_IDX].ptr);
     byte_array_append_cstring(arr, " ");
@@ -215,7 +221,7 @@ size_t http_serialize_start_line(struct byte_array *arr, struct string start_lin
     return arr->len - start;
 }
 
-size_t http_serialize_header_fields(struct byte_array *arr, struct string header_fields[HF_COUNT]) {
+size_t http_serialize_header_fields(struct byte_array *arr, struct gkab_string header_fields[HF_COUNT]) {
     off_t start = arr->len;
     for (int i = 0; i < HF_COUNT; i++) {
         if (header_fields[i].len != 0) {
@@ -233,7 +239,7 @@ size_t http_get_message_header_size(struct http_message *message) {
     return header_size;
 }
 
-struct byte_array http_serialize_message(struct http_message *message, struct arena *arena) {
+struct byte_array http_serialize_message(struct http_message *message, struct gkab_arena *arena) {
     size_t message_size = http_get_message_header_size(message) + message->content.len;
     struct byte_array buf;
     byte_array_init(&buf, message_size, arena); 
@@ -250,14 +256,14 @@ struct byte_array http_serialize_message(struct http_message *message, struct ar
     return buf;
 }
 
-void http_send_message(int sockfd, struct http_message *message, struct arena *arena) {
+void http_send_message(int sockfd, struct http_message *message, struct gkab_arena *arena) {
     assert(g_initialized);
 
     struct byte_array buf = http_serialize_message(message, arena);
     net_send(sockfd, &buf);
 }
 
-void http_recv_message(int sockfd, struct http_message *message, struct arena *arena) {
+void http_recv_message(int sockfd, struct http_message *message, struct gkab_arena *arena) {
     assert(g_initialized);
 
     struct byte_array header_buf;
@@ -280,9 +286,9 @@ void http_recv_message(int sockfd, struct http_message *message, struct arena *a
 }
 
 void http_init(struct http *http) {
-    arena_init(&http->arena);
+    gkab_arena_init(&http->arena);
     http->route_count = 0;
-    http->default_route.name = string_empty();
+    http->default_route.name = gkab_string_empty();
 
     byte_array_init(&g_space_bytes, 1, &http->arena);
     byte_array_append_cstring(&g_space_bytes, " ");
@@ -294,8 +300,8 @@ void http_init(struct http *http) {
     g_initialized = true;
 }
 
-//void http_listen_and_serve(struct string *port, int (*handler)(struct http_message*, struct http_message*, struct arena*)) {
-void http_listen_and_serve(struct http* http, struct string *port) {
+//void http_listen_and_serve(struct gkab_string *port, int (*handler)(struct http_message*, struct http_message*, struct gkab_arena*)) {
+void http_listen_and_serve(struct http* http, struct gkab_string *port) {
 	int sockfd, new_fd;  // listen on sock_fd, new connection on new_fd
 	struct addrinfo hints, *servinfo, *p;
 	struct sockaddr_storage their_addr; // connector's address information
@@ -376,8 +382,8 @@ void http_listen_and_serve(struct http* http, struct string *port) {
 		if (!fork()) { // this is the child process
 			close(sockfd); // child doesn't need the listener
 
-            struct arena arena;
-            arena_init(&arena);
+            struct gkab_arena arena;
+            gkab_arena_init(&arena);
 
             struct http_message request;
             http_init_request(&request);
@@ -385,18 +391,19 @@ void http_listen_and_serve(struct http* http, struct string *port) {
 
             struct http_message response;
             http_init_response(&response);
-            response.start_line[SL_HTTP_VERSION_IDX] = string_from_cstring("HTTP/1.1", &arena);
+            response.start_line[SL_HTTP_VERSION_IDX] = gkab_string_dup_cstring("HTTP/1.1", &arena);
 
             //Change to canonical form (drop trailing slash)
-            struct string path = request.start_line[RL_PATH_IDX];
+            struct gkab_string path = request.start_line[RL_PATH_IDX];
             if (path.ptr[path.len - 1] == '/') {
-                path = string_init(path.ptr, path.len - 1, &arena);
+                path = gkab_string_slice(&path, 0, path.len - 1, &arena);
+                //path = string_init(path.ptr, path.len - 1, &arena);
             }
             //loop through all routes and find matching route handler
             bool handled = false;
             int result = 0;
             for (int i = 0; i < http->route_count; i++) {
-                if (string_equals(&path, &http->routes[i].name)) {
+                if (gkab_string_cmp(&path, &http->routes[i].name) == 0) {
                     result = http->routes[i].handler(&response, &request, &arena);
                     handled = true;
                     break;
@@ -418,14 +425,14 @@ void http_listen_and_serve(struct http* http, struct string *port) {
             */
 
             close(new_fd);
-            arena_free(&arena);
+            gkab_arena_free(&arena);
 			exit(0);
 		}
 		close(new_fd);  // parent doesn't need this
 	}
 }
 
-bool http_write_file(struct http_message *response, const char *path, struct arena *arena) {
+bool http_write_file(struct http_message *response, const char *path, struct gkab_arena *arena) {
     FILE *f = fopen(path, "rb"); //+1 to skip the slash before path
     if (!f) {
         return false;
@@ -439,24 +446,31 @@ bool http_write_file(struct http_message *response, const char *path, struct are
             return false;
         }
         response->content.len = len;
-        struct string content_length = string_from_int(len, arena);
+        struct gkab_string content_length = string_from_int(len, arena);
         http_set_header_field(response, HF_CONTENT_LENGTH, &content_length);
     }
     return true;
 }
 
-void http_set_route(struct http *http, const char *route, int (*handler)(struct http_message*, struct http_message*, struct arena*)) {
+void http_set_route(struct http *http, const char *route, int (*handler)(struct http_message*, struct http_message*, struct gkab_arena*)) {
+    /*
     size_t len = strlen(route);
     //change routes to canonical form (ie, no trailing slashes)
     if (route[len - 1] == '/') {
         len--;
     }
 
-    struct string s = string_init(route, len, &http->arena);
+    struct gkab_string s = string_init(route, len, &http->arena);
+    */
+
+    struct gkab_string s = gkab_string_dup_cstring(route, &http->arena);
+    if (s.cstring[s.len - 1] == '/') {
+        s = gkab_string_slice(&s, 0, s.len - 1, &http->arena);
+    }
 
     bool inserted = false;
     for (int i = 0; i < http->route_count; i++) {
-        if (string_equals(&s, &http->routes[i].name)) {
+        if (gkab_string_cmp(&s, &http->routes[i].name) == 0) {
             http->routes[i].handler = handler;
             inserted = true;
             break;
@@ -471,7 +485,7 @@ void http_set_route(struct http *http, const char *route, int (*handler)(struct 
     }
 }
 
-void http_set_default_route(struct http *http, int (*handler)(struct http_message*, struct http_message*, struct arena*)) {
+void http_set_default_route(struct http *http, int (*handler)(struct http_message*, struct http_message*, struct gkab_arena*)) {
     http->default_route.handler = handler;
 }
 

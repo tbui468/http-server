@@ -6,17 +6,10 @@ Read these two:
         this is related to forms, not request parameters (???)
     https://www.jmarshall.com/easy/http/
 
-
-move all shared code to a new github project called gkab.h
-    arena (find one that includes realloc, even if it's slow)
-    macros for generating lists
-
-
-include gkab.h into project, and use this for arena and byte_array
-
-Use gkab as prefix to this project
-    gkab_listen_and_serve
-    gkab_string
+copy code from gkab to this project and use those
+    replace this string class with gkab_string
+    replace byte_array with gkab arrays
+    replace arena with gkab_arena
 
 Add templates for dynamic html generation
     What's the API we should use?
