@@ -6,10 +6,20 @@ Read these two:
         this is related to forms, not request parameters (???)
     https://www.jmarshall.com/easy/http/
 
-copy code from gkab to this project and use those
-    replace this string class with gkab_string
-    replace byte_array with gkab arrays
-    replace arena with gkab_arena
+Deploy basic version with working skulpt to thomasbui.net
+    just to make sure it actually works
+    compile C program
+    Make it serve on a port that nginx forwards to
+
+need to make a basic template engine
+    www.thomasbui.net/igcse - takes to menu
+    www.thomasbui.net/igcse/2034 - takes to a particular test/autocheck (notice the clean routes here)
+
+Use python_course project code as a reference, and build 
+    an autocheck system for 15 point questions
+    indentation
+    custom user input
+    give example outputs for each test question
 
 Add templates for dynamic html generation
     What's the API we should use?
