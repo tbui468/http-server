@@ -6,20 +6,46 @@ Read these two:
         this is related to forms, not request parameters (???)
     https://www.jmarshall.com/easy/http/
 
-Deploy basic version with working skulpt to thomasbui.net
-    just to make sure it actually works
-    compile C program
-    Make it serve on a port that nginx forwards to
-
 need to make a basic template engine
-    www.thomasbui.net/igcse - takes to menu
-    www.thomasbui.net/igcse/2034 - takes to a particular test/autocheck (notice the clean routes here)
+    www.thomasbui.net/igcse/15-marker
+    www.thomasbui.net/igcse/15-marker/2034 - takes to a particular test/autocheck (notice the clean routes here)
+
+Autocheck
+    Add example(s) to description showing students _all_ possible paths
+    write tests that cover examples (public tests)
+    write tests that are hidden
+
+Replacing byte_array.h with gkab_array.h
+    Implement more function for arrays
+        require the function when making the array:
+            GKAB_MAKE_ARRAY(u8array, uint8_t, u8_cmp_func);
+
+        Add a new field for a function pointer that compares two elements of type: (int)(*cmp)(elem_t *e1, elem_t *e2);
+        Implement find_element function (uses cmp field)
+        Implement find_subarray function (uses cmp field)
+        Implement concat_inplace function (concatenates second array onto first array, modifying first array.  Second array remains unchanged)
+
+    Use gkab_array u8array and create wrappers for custom usage
+        make a wrapper that appends a string to u8array
+        make a wrapper that appends a u8array to u8array
+        gkab_array should have a new function: find subarray
+            need to bring over find also
+
+    Replace all calls to byte_array with custom array made with GKAB_MAKE_ARRAY
+
+change blog.service to use the executable in http project
+    1. modify the blog.service file to point to correct executable
+    2. start service
 
 Use python_course project code as a reference, and build 
     an autocheck system for 15 point questions
     indentation
     custom user input
     give example outputs for each test question
+
+    Two columns:
+        buttons
+        editor  description (including examples and results of autocheck)
 
 Add templates for dynamic html generation
     What's the API we should use?

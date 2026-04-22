@@ -57,6 +57,26 @@ int not_found(struct http_message *response, struct http_message *request, struc
     return 0;
 }
 
+int fifteen_markers(struct http_message *response, struct http_message *request, struct gkab_arena *arena) {
+    if (http_write_file(response, "fifteen_markers.html", arena)) {
+        http_set_response_status(response, SC_200, arena);
+    } else {
+        http_set_response_status(response, SC_404, arena);
+    }
+
+    return 0;
+}
+
+int question(struct http_message *response, struct http_message *request, struct gkab_arena *arena) {
+    if (http_write_file(response, "question.html", arena)) {
+        http_set_response_status(response, SC_200, arena);
+    } else {
+        http_set_response_status(response, SC_404, arena);
+    }
+
+    return 0;
+}
+
 int main(int argc, char *argv[])
 {
     if (argc != 2) {
@@ -69,6 +89,8 @@ int main(int argc, char *argv[])
 
 
     http_set_route(&http, "/", home);
+    http_set_route(&http, "/igcse/15-markers", fifteen_markers);
+    http_set_route(&http, "/igcse/15-markers/1", question);
     http_set_route(&http, "/about", about);
     http_set_route(&http, "/post", post);
     http_set_default_route(&http, default_handler);

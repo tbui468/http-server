@@ -1,3 +1,26 @@
 h1 {
     color: red;
 }
+
+.two-column-layout {
+  display: flex;
+  gap: 1rem;        /* space between columns */
+}
+
+.two-column-layout section {
+  flex: 1;          /* each column takes equal width */
+}
+
+textarea {
+  padding: 15px;
+  font-family: monospace;
+  font-size: 1.2em;
+  border: 1px solid white;
+  outline: none;
+  resize: none;
+  background-color: #000;
+  color: #fff;
+}
+
+#dom_code {
+}
